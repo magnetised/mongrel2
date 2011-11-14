@@ -10,11 +10,6 @@ This package assumes that you have already installed
 and the 
 [0mq support for go](https://github.com/alecthomas/gozmq). 
 
-To run gozmq with
-later versions of go (such as weekly of 9 November 2011), requires a 
-[patch](https://gist.github.com/1362154)
-for gozmq.
-
 Install
 -------
 
@@ -71,34 +66,4 @@ want to run the `mongrel_workers` handler.  Sadly, you have change the
 If you run that executable, you can send multiple requests to the handler and
 you will see in the browser results that there are different goroutines
 responding, and in round-robin fashion.
-
-In Eclipse
-----------
-
-The project files are designed to be used with
-[goclipse](http://code.google.com/p/goclipse/) which may help explain the
-unusual directory layout.  If you load this project into goclipse, you can just 
-use the "Run As Go Program" menu option to run either of the two supplied 
-handlers, `mongrel_raw` or `workers`.  Because the package mongrel2 is in the 
-src/pkg directory, you should not need to build anything and can ignore
-the supplied Makefiles.
-
-### Troubleshouting in Eclipse
-
-The goclipse support is quite primitive.  Here are two common things that 
-"make it happy."
-
-* Use the menu option "Project > Clean" liberally.  Goclipse seems to get 
-confused easily, especially if you are moving files around.  If it says there 
-is a mistake on a line, especially if it is an error about an uknown type or 
-name that it clearly _should_ know about, this should be your first response.
-
-* Make sure that check the "Problems" view in Eclipse to see if there are any clues 
-there.  Often, it will complain that it cannot open a directory like
-"bin/darwin\_amd64" or "pkg/darwin\_amd64".  Goclipse _should_ be smart enough to
-create these for you, since they are just the place it puts its compiled
-binaries, but it doesn't.  You can go to the top level of the project in the
-workspace (the one with "src" as a child) and create the directories it
-needs, such as "bin/darwin\_amd64" and "pkg/darwin\_amd64" on a mac. If you need
-to know your directory name like "darwin_amd64" it is just the value of your
-`GOOS` and `GOARCH` environment variables.
+ment variables.
