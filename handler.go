@@ -31,7 +31,6 @@ import (
 //different HandlerAddresses.  
 //See http://mongrel2.org/static/mongrel2-manual.html#x1-680005.1.7
 type Handler struct {
-	Context                     gozmq.Context
 	InSocket, OutSocket         gozmq.Socket
 	PullSpec, PubSpec, Identity string
 	In                          chan *Request
@@ -73,15 +72,9 @@ type Response struct {
 
 //initZMQ creates the necessary ZMQ machinery and sets the fields of the
 //Mongrel2 struct.
-func (self *Handler) initZMQ() error {
+func (self *Handler) initZMQ(ctx gozmq.Context) error {
 
-	c, err := gozmq.NewContext()
-	if err != nil {
-		return err
-	}
-	self.Context = c
-
-	s, err := self.Context.NewSocket(gozmq.PULL)
+	s, err := ctx.NewSocket(gozmq.PULL)
 	if err != nil {
 		return err
 	}
@@ -92,7 +85,7 @@ func (self *Handler) initZMQ() error {
 		return err
 	}
 
-	s, err = self.Context.NewSocket(gozmq.PUB)
+	s, err = ctx.NewSocket(gozmq.PUB)
 	if err != nil {
 		return err
 	}
@@ -102,15 +95,14 @@ func (self *Handler) initZMQ() error {
 	if err != nil {
 		return err
 	}
-
-	//not sure why this generates an error... seems legit
-/*	var opt int64
-	opt=0
-	err = self.OutSocket.SetSockOptInt64(gozmq.LINGER, &opt)
+	
+	//this is not super great but makes debugging much easier
+	/*
+	err = self.OutSocket.SetSockOptInt64(gozmq.LINGER, int64(0))
 	if err != nil {
 		return err
-	}*/
-
+	}
+	*/
 	err = self.OutSocket.Connect(self.PubSpec)
 	if err != nil {
 		return err
@@ -124,7 +116,7 @@ func (self *Handler) initZMQ() error {
 //parameter is typically created by a call to the function GetHandlerAddress().
 //Clients must supply the two channels used to communicate with the raw level
 //of the mongrel2 protocol.
-func NewHandler(address *HandlerAddr, in chan *Request, out chan *Response) (*Handler, error) {
+func NewHandler(address *HandlerAddr, in chan *Request, out chan *Response, ctx gozmq.Context) (*Handler, error) {
 
 	result := new(Handler)
 	result.PullSpec = address.PullSpec
@@ -132,7 +124,7 @@ func NewHandler(address *HandlerAddr, in chan *Request, out chan *Response) (*Ha
 	result.Identity = address.UUID
 	result.In = in
 	result.Out = out
-	err := result.initZMQ()
+	err := result.initZMQ(ctx)
 	if err != nil {
 		return nil, errors.New("0mq init:" + err.Error())
 	}
@@ -148,8 +140,8 @@ func (self *Handler) readloop() {
 	for {
 		r, err := self.ReadMessage()
 		if err != nil {
-			e := err.(gozmq.ZmqErrno)
-			if (e==gozmq.ETERM) {
+			//e := err.(gozmq.ZmqErrno)
+			if (err==gozmq.ETERM) {
 				//fmt.Printf("read loop ignoring ETERM...\n")
 				return
 			}
@@ -169,8 +161,8 @@ func (self *Handler) writeloop() {
 
 		err := self.WriteMessage(m)
 		if err != nil {
-			e := err.(gozmq.ZmqErrno)
-			if (e==gozmq.ETERM) {
+			//e := err.(gozmq.ZmqErrno)
+			if (err==gozmq.ETERM) {
 				//fmt.Printf("write loop ignoring ETERM...\n")
 				return
 			}
@@ -311,6 +303,8 @@ func Type4UUID() (string, error) {
 //allocating the resources, like this:
 //	mongrel:=NewHandler(...)
 //  defer mongrel.Shutdown()
+// Note that this does not close the context because the context is supplied from
+// outside the handler.
 func (self *Handler) Shutdown() error {
 
 	//tell writeloop to exit
@@ -327,6 +321,5 @@ func (self *Handler) Shutdown() error {
 		return err
 	}
 
-	self.Context.Close()
 	return nil
 }

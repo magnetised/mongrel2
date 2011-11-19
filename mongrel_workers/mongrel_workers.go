@@ -28,6 +28,17 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unable to get an address for our handler:%s\n", err)
 		return
 	}
+	
+	//initialize zmq... only once per address space
+	ctx, err := gozmq.NewContext()
+	if err!=nil {
+		fmt.Fprintf(os.Stderr, "unable to initialize zmq context:%s\n",err)
+	}
+	//remember to close it
+	defer func() {
+		ctx.Close()
+	}()
+	
 
 	//allocate channels so we can talk to the mongrel2 system with go
 	// abstractions
@@ -36,7 +47,7 @@ func main() {
 	
 	// this allocates the "raw" abstraction for talking to a mongrel server
 	// mongrel doc refers to this as a "handler"
-	handler, err := mongrel2.NewHandler(addr, in, out)
+	handler, err := mongrel2.NewHandler(addr, in, out, ctx)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error initializing mongrel connection:%s\n", err)
