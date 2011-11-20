@@ -264,6 +264,7 @@ func (self *Handler) WriteMessage(response *Response) error {
 		buffer.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\n", response.StatusCode, response.StatusMsg))
 	}
 
+
 	buffer.WriteString(fmt.Sprintf("Content-Length: %d\r\n", len(response.Body)))
 
 	for k, v := range response.Header {
