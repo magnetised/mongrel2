@@ -3,12 +3,10 @@ package mongrel2
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/alecthomas/gozmq"
-	"io"
 	"strconv"
 	"strings"
 )
@@ -84,6 +82,11 @@ func (self *Handler) initZMQ(ctx gozmq.Context) error {
 	if err != nil {
 		return err
 	}
+	
+	err = self.InSocket.SetSockOptInt32(gozmq.LINGER, 0)
+	if err != nil {
+		return err
+	}
 
 	s, err = ctx.NewSocket(gozmq.PUB)
 	if err != nil {
@@ -96,13 +99,11 @@ func (self *Handler) initZMQ(ctx gozmq.Context) error {
 		return err
 	}
 	
-	//this is not super great but makes debugging much easier
-	/*
-	err = self.OutSocket.SetSockOptInt64(gozmq.LINGER, int64(0))
+	err = self.OutSocket.SetSockOptInt32(gozmq.LINGER, 0)
 	if err != nil {
 		return err
 	}
-	*/
+
 	err = self.OutSocket.Connect(self.PubSpec)
 	if err != nil {
 		return err
@@ -121,9 +122,9 @@ func NewHandler(address *HandlerAddr, in chan *Request, out chan *Response, ctx 
 	result := new(Handler)
 	result.PullSpec = address.PullSpec
 	result.PubSpec = address.PubSpec
-	result.Identity = address.UUID
 	result.In = in
 	result.Out = out
+	result.Identity = address.Identity
 	err := result.initZMQ(ctx)
 	if err != nil {
 		return nil, errors.New("0mq init:" + err.Error())
@@ -284,19 +285,6 @@ func (self *Handler) WriteMessage(response *Response) error {
 
 	err := self.OutSocket.Send(buffer.Bytes(), 0)
 	return err
-}
-//Type4UUID generates a RFC 4122 compliant UUID.  This code was originally posted
-//by Ross Cox to the go-nuts mailing list.
-//http://groups.google.com/group/golang-nuts/msg/5ebbdd72e2d40c09
-func Type4UUID() (string, error) {
-	b := make([]byte, 16)
-	_, err := io.ReadFull(rand.Reader, b)
-	if err != nil {
-		return "", err
-	}
-	b[6] = (b[6] & 0x0F) | 0x40
-	b[8] = (b[8] &^ 0x40) | 0x80
-	return fmt.Sprintf("%x-%x-%x-%x-%x", b[:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
 
 //Shutdown cleans up the resources associated with this mongrel2 connection.
