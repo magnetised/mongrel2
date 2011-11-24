@@ -10,3 +10,13 @@ type M2JsonHandlerDefault struct {
 }
 
 
+
+func (self *M2JsonHandlerDefault) ReadJson() (map[string]interface{}, error) {
+	return nil,nil
+}
+
+func (self *M2JsonHandlerDefault) WriteJson(map[string]interface{}) error {
+	return nil
+}
+
+

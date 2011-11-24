@@ -28,8 +28,6 @@ type M2RawHandlerDefault struct {
 //Mongrel2 struct.  This is normally called via the Init() method.
 func (self *M2RawHandlerDefault) InitZMQ(ctx gozmq.Context) error {
 
-	fmt.Fprintf(os.Stderr,"INIT ZMQ: %v [%s %s]\n",ctx,self.PullSpec,self.PubSpec)
-
 	s, err := ctx.NewSocket(gozmq.PULL)
 	if err != nil {
 		return err
@@ -75,7 +73,6 @@ func (self *M2RawHandlerDefault) InitZMQ(ctx gozmq.Context) error {
 //an address based on the name and uses that for the send and receive sockets.  If
 //called multiple times, it has no effect.
 func (self *M2RawHandlerDefault) Bind(name string, ctx gozmq.Context) error {
-
 	//this only needs to be done once for a particular name, even if you call
 	//Shutdown() and Bind() again.
 	if self.Identity=="" {
