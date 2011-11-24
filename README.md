@@ -10,6 +10,15 @@ This package assumes that you have already installed
 and the 
 [0mq support for go](https://github.com/alecthomas/gozmq). 
 
+Design
+------
+There are two important interfaces in this package, `M2HttpHandler` and `M2JSHandler` that can respond to mongrel2 messages for (implementation of) HTTP requests and JavaScript requests, respectively.  Each of these has an implementation of basic functionality called `M2HttpHandlerDefault` and `M2JSHandlerDefault`, respectively.  These particular implementations know how to correctly `Bind()` to mongrel server--thus allocating resources like ZMQ sockets--and how to `Shutdown()` which does the reverse.  The two interfaces (and their implementations) know 
+the particulars of the communication format that they should use with mongrel2.  For example the `M2HttpHandlerDefault` knows about `M2HttpRequest` and `M2HttpHandlerResponse`
+
+There is an interface `M2RawHandler` and a corresponding simple implementation called `M2RawHandlerDefault` that should never be needed by developers.  It exists only to share code between the JS and HTTP code and thus avoid repetition.
+
+Interfaces are structs prefixed by "M2" indicate that the entity deals with the raw mongrel2 layer.  This is to avoid confusion between, for example, the specific protocol that mongrel2 uses for talking with HTTP handlers and the HTTP protocol proper.
+
 Install
 -------
 
