@@ -15,15 +15,15 @@ Design
 ------
 This is the mongrel2 layer.  Most *Seven5* developers can safely ignore this layer as it is pretty "raw" (like a _steack tartare_ kinda raw).
 
-There are two important interfaces in this package, `M2HttpHandler` and `M2JsonHandler` that can respond to mongrel2 messages for (implementation of) HTTP requests and Json requests, respectively.  Each of these has an implementation of basic functionality called `M2HttpHandlerDefault` and `M2JsonHandlerDefault`, respectively.  These particular implementations know how to correctly `Bind()` to mongrel server--thus allocating resources like ZMQ sockets--and how to `Shutdown()` which does the reverse.  The two interfaces (and their implementations) know 
-the particulars of the communication format that they should use with mongrel2.  For example the `M2HttpHandlerDefault` knows about `M2HttpRequest` and `M2HttpHandlerResponse`
+There are two important interfaces in this package, `HttpHandler` and `JsonHandler` that can respond to mongrel2 messages for (implementation of) HTTP requests and Json requests, respectively.  Each of these has an implementation of basic functionality called `HttpHandlerDefault` and `JsonHandlerDefault`, respectively.  These particular implementations know how to correctly `Bind()` to mongrel server--thus allocating resources like ZMQ sockets--and how to `Shutdown()` which does the reverse.  The two interfaces (and their implementations) know 
+the particulars of the communication format that they should use with mongrel2.  For example the `HttpHandlerDefault` knows about `HttpRequest` and `HttpHandlerResponse`
 
-There is an interface `M2RawHandler` and a corresponding simple implementation called `M2RawHandlerDefault` that should never be needed by developers.  It exists only to share code between the JS and HTTP code and thus avoid repetition.  Note that the implementations of
-`M2HttpHandlerDefault` and `M2JsonHandlerDefault` include the implementation of `M2RawHandlerDefault`.  This is what you want.  If you had a composite that included the implementation of _both_ `M2HttpHandlerDefault` and `M2JsonHandlerDefault` it would need, and 
+There is an interface `RawHandler` and a corresponding simple implementation called `RawHandlerDefault` that should never be needed by developers.  It exists only to share code between the JS and HTTP code and thus avoid repetition.  Note that the implementations of
+`HttpHandlerDefault` and `JsonHandlerDefault` include the implementation of `RawHandlerDefault`.  This is what you want.  If you had a composite that included the implementation of _both_ `HttpHandlerDefault` and `JsonHandlerDefault` it would need, and 
 would have, four sockets for mongrel2 communication--since mongrel two considers these "different
 handlers" from its point of view.  
 
-Interfaces are structs prefixed by "M2" indicate that the entity deals with the raw mongrel2 layer.  This is to avoid confusion between, for example, the specific protocol that mongrel2 uses for talking with HTTP handlers and the HTTP protocol proper.
+Based on [effective go](http://golang.org/doc/effective_go.html) we expect you to use `mongrel2.HttpRequest` and `http.Request` to differentiate the mongrel2 specific version from similar, but different, other types.
 
 Install
 -------
@@ -39,7 +39,7 @@ Go into the `src/cmd/` directory and do `make` to build an example program. The
 program expects that you have previously configured mongrel2 to expect a
 hadler like this:
 
-	handler_test = Handler(	send_spec='tcp://127.0.0.1:10070',
+	handler_test = Handler(	send_spec='tcp://127.0.0.1:10070',Makefile
     	                   	send_ident='34f9ceee-cd52-4b7f-b197-88bf2f0ec378',
                   	     	recv_spec='tcp://127.0.0.1:10071',
 							recv_ident='') 

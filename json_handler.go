@@ -1,91 +1,88 @@
 package mongrel2
 
 import (
-	"fmt"
-	"os"
-	"github.com/alecthomas/gozmq"
 	"encoding/json"
-	"strings"
+	"fmt"
+	"github.com/alecthomas/gozmq"
 	"strconv"
+	"strings"
 )
 
-type M2JsonRequest struct {
-	ServerId string
-	ClientId int
+type JsonRequest struct {
+	ServerId    string
+	ClientId    int
 	ServicePath string
-	MongrelInfo map[string] string
-	Json map[string]interface{}
+	MongrelInfo map[string]string
+	Json        map[string]interface{}
 }
 
-type M2JsonResponse struct {
+type JsonResponse struct {
 	ServerId string
 	ClientId []int
-	Json map[string]interface{}
+	Json     map[string]interface{}
 }
 
-type M2JsonHandler interface {
-	ReadJson() (*M2JsonRequest, error)
-	WriteJson(*M2JsonResponse) error
+type JsonHandler interface {
+	ReadJson() (*JsonRequest, error)
+	WriteJson(*JsonResponse) error
 }
 
-type M2JsonHandlerDefault struct {
-	*M2RawHandlerDefault
+type JsonHandlerDefault struct {
+	*RawHandlerDefault
 }
 
-func (self *M2JsonHandlerDefault) ReadJson() (*M2JsonRequest, error) {
-	
+func (self *JsonHandlerDefault) ReadJson() (*JsonRequest, error) {
+
 	payload, err := self.InSocket.Recv(0)
 	if err != nil {
 		return nil, err
 	}
-	serverId, clientId, path, m2, bodyStart, bodySize, error := DecodeM2PayloadStart(payload)
-	
-	if error!=nil {
-		return nil,error
+	serverId, clientId, path, info, bodyStart, bodySize, error := DecodePayloadStart(payload)
+
+	if error != nil {
+		return nil, error
 	}
-	
+
 	var content map[string]interface{}
-	
-	if bodySize>0 {
+
+	if bodySize > 0 {
 		err = json.Unmarshal(payload[bodyStart:bodyStart+bodySize], &content)
-		if err!=nil {
+		if err != nil {
 			return nil, err
 		}
 	}
-	
-	result := new(M2JsonRequest)
+
+	result := new(JsonRequest)
 	result.ServerId = serverId
 	result.ClientId = clientId
-	result.MongrelInfo = m2
+	result.MongrelInfo = info
 	result.ServicePath = path
 	result.Json = content
-	
-	fmt.Fprintf(os.Stderr,"client %d json=%v\n",result.ClientId, result.Json)
-	
-	return result,nil
+
+	return result, nil
 }
 
-func (self *M2JsonHandlerDefault) WriteJson(resp *M2JsonResponse) error {
+func (self *JsonHandlerDefault) WriteJson(resp *JsonResponse) error {
 	c := make([]string, len(resp.ClientId), len(resp.ClientId))
 	for i, x := range resp.ClientId {
 		c[i] = strconv.Itoa(x)
 	}
 	clientList := strings.Join(c, " ")
-	b,err:=json.Marshal(resp.Json)
-	if err!=nil {
+	b, err := json.Marshal(resp.Json)
+	if err != nil {
 		return err
 	}
-	body:=string(b)
-	payload := FormatForMongrel2(resp.ServerId,  200,  "",  clientList,  nil, body)
-	return self.OutSocket.Send([]byte(payload),0)
-	
+
+	body := string(b)
+	payload := fmt.Sprintf("%s %d:%s, %s", resp.ServerId, len(clientList), clientList, body)
+	return self.OutSocket.Send([]byte(payload), 0)
+
 }
 
 // ReadLoop is a loop that reads mongrel2 messages until it gets an error.  This useful if
 // you want to launch a goroutine that reads forever from mongrel2 and makes the read 
 // messages available on the supplied channel.
-func (self *M2JsonHandlerDefault) ReadLoop(in chan *M2JsonRequest) {
-	fmt.Fprintf(os.Stderr,"in read loop... about to go to read json\n")
+func (self *JsonHandlerDefault) ReadLoop(in chan *JsonRequest) {
 	for {
 		r, err := self.ReadJson()
 		if err != nil {
@@ -101,7 +98,7 @@ func (self *M2JsonHandlerDefault) ReadLoop(in chan *M2JsonRequest) {
 // or a message to close.  This is useful when you want to launch a goroutine
 //that runs forever just taking messages from the out channel supplied and pushing them
 //to mongrel2.
-func (self *M2JsonHandlerDefault) WriteLoop(out chan *M2JsonResponse) {
+func (self *JsonHandlerDefault) WriteLoop(out chan *JsonResponse) {
 	for {
 		m := <-out
 		if m == nil {

@@ -30,18 +30,18 @@ func main() {
 		ctx.Close()
 	}()
 
-	//Note: the M2HttpHandlerDefault is *both* an M2RawHandler and M2HttpHandler because
-	//it borrows the implementation of mongrel2.M2RawHandlerDefault.  These interfaces
+	//Note: the HttpHandlerDefault is *both* an RawHandler and HttpHandler because
+	//it borrows the implementation of mongrel2.RawHandlerDefault.  These interfaces
 	//are separated so that one can combine them any way you want, such as an object
-	//"foo" that is M2RawHandler, M2HttpHandler, and M2JSHandler at the same time.  However
+	//"foo" that is RawHandler, HttpHandler, and JSHandler at the same time.  However
 	//the default implementations combine these together for convenience.
 	
-	var implementation *mongrel2.M2HttpHandlerDefault
-	var httpInterface mongrel2.M2HttpHandler
-	var socketInterface mongrel2.M2RawHandler
+	var implementation *mongrel2.HttpHandlerDefault
+	var httpInterface mongrel2.HttpHandler
+	var socketInterface mongrel2.RawHandler
 	var err error
 
-	implementation = new (mongrel2.M2HttpHandlerDefault)
+	implementation = new (mongrel2.HttpHandlerDefault)
 	httpInterface = implementation    // to illustrate the types
 	socketInterface = implementation  // to illustrate the types
 
@@ -68,7 +68,7 @@ func main() {
 	fmt.Printf("server %s sent %s from client %d\n", req.ServerId, req.Path, req.ClientId)
 
 	//create a response to go back to the client
-	response := new(mongrel2.M2HttpResponse)
+	response := new(mongrel2.HttpResponse)
 
 	//note: copying the serverid and clientid to target the appropriate browser!
 	response.ServerId = req.ServerId

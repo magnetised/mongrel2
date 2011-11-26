@@ -5,12 +5,12 @@ import (
 	"hash/fnv"
 )
 
-// M2HandlerSpec is returned in response a request for the location (in 
+// HandlerSpec is returned in response a request for the location (in 
 // 0mq terms) of a particular named handler.  It contains the mongrel2
 // necessary specifications of the Pull and Pub sockets, plus the unique
 // id of the handler.  The Pull socket is assigned the lower of the two
 // port numbers.
-type M2HandlerSpec struct {
+type HandlerSpec struct {
 	Name     string
 	PubSpec  string
 	PullSpec string
@@ -20,7 +20,7 @@ type M2HandlerSpec struct {
 var (
 	//handler is the private mapping that keps the binding between names and
 	//the handler addresses.
-	handler = make(map[string]*M2HandlerSpec)
+	handler = make(map[string]*HandlerSpec)
 
 	//currentPort is the next port number to be assigned by the GetAssignment
 	//function.  It never decreases.
@@ -33,12 +33,12 @@ var (
 //GetAssignment is used to find a spec for a handler of a given name.  If
 //name has been previously assigned a HandlerAddr the previously allocated
 //address is returned, otherwise a new HandlerAddr is created and returned.
-func GetM2HandlerSpec(name string) (*M2HandlerSpec, error) {
+func GetHandlerSpec(name string) (*HandlerSpec, error) {
 	a := handler[name]
 	if a != nil {
 		return a, nil
 	}
-	result := new(M2HandlerSpec)
+	result := new(HandlerSpec)
 	result.Name= name
 	result.PullSpec = fmt.Sprintf("tcp://127.0.0.1:%d", currentPort)
 	currentPort++

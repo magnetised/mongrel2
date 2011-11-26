@@ -13,7 +13,7 @@ import (
 //RawHandler is the basic type for an object that communicate with mongrel2.  This interface
 //just knows about sockets, nothing about what to do with communication on those sockets.
 //Developers should not need this type.
-type M2RawHandler interface {
+type RawHandler interface {
 	Bind(name string, ctx gozmq.Context) error
 	Shutdown() error
 }
@@ -21,14 +21,14 @@ type M2RawHandler interface {
 //Handler is a low-level an implementation of the interface RawHandler
 //for connecting, via 0MQ, to a mongrel2 server. Developers should not need
 //this type, it is part of the implementation of this package.
-type M2RawHandlerDefault struct {
+type RawHandlerDefault struct {
 	InSocket, OutSocket         gozmq.Socket
 	PullSpec, PubSpec, Identity string
 }
 
 //initZMQ creates the necessary ZMQ machinery and sets the fields of the
 //Mongrel2 struct.  This is normally called via the Init() method.
-func (self *M2RawHandlerDefault) InitZMQ(ctx gozmq.Context) error {
+func (self *RawHandlerDefault) InitZMQ(ctx gozmq.Context) error {
 
 	s, err := ctx.NewSocket(gozmq.PULL)
 	if err != nil {
@@ -74,11 +74,11 @@ func (self *M2RawHandlerDefault) InitZMQ(ctx gozmq.Context) error {
 //to mongrel2.  It uses the supplied context to allocate the resources and allocates
 //an address based on the name and uses that for the send and receive sockets.  If
 //called multiple times, it has no effect.
-func (self *M2RawHandlerDefault) Bind(name string, ctx gozmq.Context) error {
+func (self *RawHandlerDefault) Bind(name string, ctx gozmq.Context) error {
 	//this only needs to be done once for a particular name, even if you call
 	//Shutdown() and Bind() again.
 	if self.Identity == "" {
-		address, err := GetM2HandlerSpec(name)
+		address, err := GetHandlerSpec(name)
 		if err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func (self *M2RawHandlerDefault) Bind(name string, ctx gozmq.Context) error {
 //  defer mongrel.Shutdown()
 // Note that this does not close the context because the context is supplied from
 // outside the handler.
-func (self *M2RawHandlerDefault) Shutdown() error {
+func (self *RawHandlerDefault) Shutdown() error {
 
 	//dump the ZMQ level sockets
 	if self.InSocket != nil {
@@ -137,10 +137,10 @@ func MustCreateContext() gozmq.Context {
 	return ctx
 }
 
-//DecodeM2PayloadStart decodes the front of a packet from the mongrel2 server destined for
+//DecodePayloadStart decodes the front of a packet from the mongrel2 server destined for
 //a backend.  The actual bytes of the body are not decoded because they differet between
 //different types of handlers.
-func DecodeM2PayloadStart(req []byte) (serverId string, clientId int, path string, jsonmap map[string]string, bodyStart int, bodySize int, err error) {
+func DecodePayloadStart(req []byte) (serverId string, clientId int, path string, jsonmap map[string]string, bodyStart int, bodySize int, err error) {
 
 	endOfServerId := readSome(' ', req, 0)
 	serverId = string(req[0:endOfServerId])

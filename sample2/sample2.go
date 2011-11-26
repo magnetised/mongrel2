@@ -29,12 +29,12 @@ func main() {
 	}()
 
 	//allocate the in and out channels that we'll be using
-	in:=make(chan *mongrel2.M2HttpRequest)
-	out:=make(chan *mongrel2.M2HttpResponse)
+	in:=make(chan *mongrel2.HttpRequest)
+	out:=make(chan *mongrel2.HttpResponse)
 
 	// this allocates the "raw" abstraction for talking to a mongrel server	
 	// mongrel doc refers to this as a "handler"
-	handler := new(mongrel2.M2HttpHandlerDefault)
+	handler := new(mongrel2.HttpHandlerDefault)
 	err := handler.Bind("sample2",ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error initializing mongrel connection (Bind):%s\n", err)
@@ -57,7 +57,7 @@ func main() {
 		req := <- in
 		
 		//create a response to go back to the client
-		response := new(mongrel2.M2HttpResponse)
+		response := new(mongrel2.HttpResponse)
 
 		//note: copying the serverid and clientid to target the appropriate browser!
 		response.ServerId = req.ServerId
