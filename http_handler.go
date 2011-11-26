@@ -2,7 +2,6 @@ package mongrel2
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/alecthomas/gozmq"
 	"strconv"
@@ -105,68 +104,27 @@ func (self *M2HttpHandlerDefault) WriteLoop(out chan *M2HttpResponse) {
 //at each byte only when necessary.  The body of the request is not examined by
 //this method.
 func (self *M2HttpHandlerDefault) ReadMessage() (*M2HttpRequest, error) {
+
 	req, err := self.InSocket.Recv(0)
 	if err != nil {
 		return nil, err
 	}
 
-	endOfServerId := readSome(' ', req, 0)
-	serverId := string(req[0:endOfServerId])
-
-	endOfClientId := readSome(' ', req, endOfServerId+1)
-	clientId, err := strconv.Atoi(string(req[endOfServerId+1 : endOfClientId]))
-	if err != nil {
-		return nil, err
-	}
-
-	endOfPath := readSome(' ', req, endOfClientId+1)
-	path := string(req[endOfClientId+1 : endOfPath])
-
-	endOfJsonSize := readSome(':', req, endOfPath+1)
-	jsonSize, err := strconv.Atoi(string(req[endOfPath+1 : endOfJsonSize]))
-	if err != nil {
-		return nil, err
-	}
-
-	jsonMap := make(map[string]string)
-	jsonStart := endOfJsonSize + 1
-
-	if jsonSize > 0 {
-		err = json.Unmarshal(req[jsonStart:jsonStart+jsonSize], &jsonMap)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	bodySizeStart := (jsonSize + 1) + jsonStart
-	bodySizeEnd := readSome(':', req, bodySizeStart)
-	bodySize, err := strconv.Atoi(string(req[bodySizeStart:bodySizeEnd]))
-
-	if err != nil {
-		return nil, err
-	}
+	serverId, clientId, path, jsonMap, bodyStart, bodySize, err := DecodeM2PayloadStart(req)
 
 	result := new(M2HttpRequest)
 	result.RawRequest = req
-	result.Body = req[bodySizeStart:bodySizeEnd]
 	result.Path = path
 	result.BodySize = bodySize
 	result.ServerId = serverId
 	result.ClientId = clientId
 	result.Header = jsonMap
 
-	return result, nil
-}
-
-func readSome(terminationChar byte, req []byte, start int) int {
-	result := start
-	for {
-		if req[result] == terminationChar {
-			break
-		}
-		result++
+	if bodySize > 0 {
+		result.Body = req[bodyStart : bodyStart+bodySize]
 	}
-	return result
+
+	return result, nil
 }
 
 //WriteMessage takes an M2HttpResponse structs and enques it for transmission.  This call 
@@ -208,4 +166,32 @@ func (self *M2HttpHandlerDefault) WriteMessage(response *M2HttpResponse) error {
 
 	err := self.OutSocket.Send(buffer.Bytes(), 0)
 	return err
+}
+
+//FormatForMongrel2 creates a packet of data for mongrel2 with the proper formatting of a 
+//response from a handler.  The message is designated for the indicated server
+//and clients.  clientList is a space-separated list.
+func FormatForMongrel2(serverId string, statusCode int, statusMsg string, clientList string,hdr map[string]string, body string) string {
+
+	//create the properly mangled body in HTTP format
+	buffer := new(bytes.Buffer)
+	if statusMsg == "" {
+		buffer.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\n", 200, "OK"))
+	} else {
+		buffer.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusCode, statusMsg))
+	}
+
+	buffer.WriteString(fmt.Sprintf("Content-Length: %d\r\n", len(body)))
+
+	for k, v := range hdr {
+		buffer.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
+	}
+
+	//critical, separating extra newline
+	buffer.WriteString("\r\n")
+	//then the body
+	buffer.WriteString(body)
+
+	//now we have the true size the body and can put it all together
+	return fmt.Sprintf("%s %d:%s, %s", serverId, len(clientList), clientList, buffer.String())
 }

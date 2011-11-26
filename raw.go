@@ -2,10 +2,12 @@
 package mongrel2
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/alecthomas/gozmq"
 	"os"
+	"strconv"
 )
 
 //RawHandler is the basic type for an object that communicate with mongrel2.  This interface
@@ -75,12 +77,12 @@ func (self *M2RawHandlerDefault) InitZMQ(ctx gozmq.Context) error {
 func (self *M2RawHandlerDefault) Bind(name string, ctx gozmq.Context) error {
 	//this only needs to be done once for a particular name, even if you call
 	//Shutdown() and Bind() again.
-	if self.Identity=="" {
-		address,err  := GetM2HandlerSpec(name)
-		if err!=nil {
+	if self.Identity == "" {
+		address, err := GetM2HandlerSpec(name)
+		if err != nil {
 			return err
 		}
-	
+
 		self.PullSpec = address.PullSpec
 		self.PubSpec = address.PubSpec
 		self.Identity = address.Identity
@@ -133,4 +135,66 @@ func MustCreateContext() gozmq.Context {
 		panic(fmt.Sprintf("unable to initialize zmq context:%s\n", err))
 	}
 	return ctx
+}
+
+//DecodeM2PayloadStart decodes the front of a packet from the mongrel2 server destined for
+//a backend.  The actual bytes of the body are not decoded because they differet between
+//different types of handlers.
+func DecodeM2PayloadStart(req []byte) (serverId string, clientId int, path string, jsonmap map[string]string, bodyStart int, bodySize int, err error) {
+
+	endOfServerId := readSome(' ', req, 0)
+	serverId = string(req[0:endOfServerId])
+
+	endOfClientId := readSome(' ', req, endOfServerId+1)
+	clientId, err = strconv.Atoi(string(req[endOfServerId+1 : endOfClientId]))
+	if err != nil {
+		return
+	}
+
+	endOfPath := readSome(' ', req, endOfClientId+1)
+	path = string(req[endOfClientId+1 : endOfPath])
+
+	var jsonSize int
+	endOfJsonSize := readSome(':', req, endOfPath+1)
+
+	jsonSize, err = strconv.Atoi(string(req[endOfPath+1 : endOfJsonSize]))
+	if err != nil {
+		return
+	}
+
+	jsonmap = make(map[string]string)
+	jsonStart := endOfJsonSize + 1
+
+	if jsonSize > 0 {
+		err = json.Unmarshal(req[jsonStart:jsonStart+jsonSize], &jsonmap)
+		if err != nil {
+			return
+		}
+	}
+
+	bodySizeStart := (jsonSize + 1) + jsonStart
+	bodySizeEnd := readSome(':', req, bodySizeStart)
+	bodyStart = bodySizeEnd + 1
+
+	bodySize, err = strconv.Atoi(string(req[bodySizeStart:bodySizeEnd]))
+
+	if err != nil {
+		return
+	}
+
+	if bodySize > 0 {
+		//bodySize -= 1
+	}
+	return
+}
+
+func readSome(terminationChar byte, req []byte, start int) int {
+	result := start
+	for {
+		if req[result] == terminationChar {
+			break
+		}
+		result++
+	}
+	return result
 }
