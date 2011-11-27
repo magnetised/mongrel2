@@ -34,7 +34,7 @@ func main() {
 
 	// this allocates the "raw" abstraction for talking to a mongrel server	
 	// mongrel doc refers to this as a "handler"
-	handler := new(mongrel2.HttpHandlerDefault)
+	handler := &mongrel2.HttpHandlerDefault{&mongrel2.RawHandlerDefault{}}
 	err := handler.Bind("sample2",ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error initializing mongrel connection (Bind):%s\n", err)

@@ -41,7 +41,7 @@ func main() {
 	var socketInterface mongrel2.RawHandler
 	var err error
 
-	implementation = new (mongrel2.HttpHandlerDefault)
+	implementation = &mongrel2.HttpHandlerDefault{&mongrel2.RawHandlerDefault{}}
 	httpInterface = implementation    // to illustrate the types
 	socketInterface = implementation  // to illustrate the types
 
