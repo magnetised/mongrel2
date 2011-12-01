@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/alecthomas/gozmq"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -36,17 +37,17 @@ type HttpRequest struct {
 //to target should be specified with the UUID and the client of that server you wish
 //to target should be in the ClientId field.  Note that this is a slice since you
 //can target up to 128 clients with a single HttpResponse struct.  The other fields are
-//passed through at the HTTP level to the client or clients.  There is no need to 
-//set the Content-Length header as this is added automatically.  The easiest way
+//passed through at the HTTP level to the client or clients.  The easiest way
 //to correctly target a HttpResponse is by looking at the values supplied in a Request
 //struct.
 type HttpResponse struct {
-	ServerId   string
-	ClientId   []int
-	Body       string
-	StatusCode int
-	StatusMsg  string
-	Header     map[string]string
+	ServerId      string
+	ClientId      []int
+	Body          io.Reader
+	ContentLength int
+	StatusCode    int
+	StatusMsg     string
+	Header        map[string]string
 }
 
 //HttpHandlerDefault is a basic implementation of the HttpHandler that knows about channels.
@@ -147,7 +148,10 @@ func (self *HttpHandlerDefault) WriteMessage(response *HttpResponse) error {
 		buffer.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\n", response.StatusCode, response.StatusMsg))
 	}
 
-	buffer.WriteString(fmt.Sprintf("Content-Length: %d\r\n", len(response.Body)))
+	if response.ContentLength==0 && response.Body!=nil {
+		panic("content length set to zero but body is not nil!")
+	}
+	buffer.WriteString(fmt.Sprintf("Content-Length: %d\r\n", response.ContentLength))
 
 	for k, v := range response.Header {
 		buffer.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
@@ -155,15 +159,19 @@ func (self *HttpHandlerDefault) WriteMessage(response *HttpResponse) error {
 
 	//critical, separating extra newline
 	buffer.WriteString("\r\n")
-	//then the body
-	buffer.WriteString(response.Body)
-
+	//then the body, if it exists
+	if response.Body != nil {
+		_, e := buffer.ReadFrom(response.Body)
+		if e != nil {
+			return e
+		}
+	}
 	//now we have the true size the body and can put it all together
 	msg := fmt.Sprintf("%s %d:%s, %s", response.ServerId, len(clientList), clientList, buffer.String())
 
 	buffer = new(bytes.Buffer)
 	buffer.WriteString(msg)
-	
+
 	err := self.OutSocket.Send(buffer.Bytes(), 0)
 	return err
 }

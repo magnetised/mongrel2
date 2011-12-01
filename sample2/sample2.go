@@ -5,6 +5,7 @@ import (
 	"mongrel2"
 	"os"
 	"time"
+	"strings"
 )
 
 //Simple demo program that processes requests one by one forever.  It uses the
@@ -64,8 +65,9 @@ func main() {
 		response.ClientId = []int{req.ClientId}
 
 		//make up a simple body for the user to see
-		response.Body = fmt.Sprintf("<pre>howdy %s, with client %d!</pre>", req.ServerId, req.ClientId)
-		
+		b:= fmt.Sprintf("<pre>howdy %s, with client %d!</pre>", req.ServerId, req.ClientId)
+		response.Body=strings.NewReader(b)
+		response.ContentLength=len(b)
 		//send it via the channel
 		out <- response
 	}
