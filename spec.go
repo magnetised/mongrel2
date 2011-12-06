@@ -61,11 +61,7 @@ func Checksum(s string) string {
 	
 	hasher.Reset()
 	hasher.Write([]byte(s))
-	
-	for i, v:=range hasher.Sum() {
-		b[i]=v
-		b[i+8]=v
-	}
+	hasher.Sum(b)
 	
 	b[6] = (b[6] & 0x0F) | 0x40
 	b[8] = (b[8] &^ 0x40) | 0x80
