@@ -25,7 +25,7 @@ var (
 	//currentPort is the next port number to be assigned by the GetAssignment
 	//function.  It never decreases.
 	currentPort = 10070
-	
+
 	//fnv hash is reused
 	hasher = fnv.New64()
 )
@@ -39,7 +39,7 @@ func GetHandlerSpec(name string) (*HandlerSpec, error) {
 		return a, nil
 	}
 	result := new(HandlerSpec)
-	result.Name= name
+	result.Name = name
 	result.PullSpec = fmt.Sprintf("tcp://127.0.0.1:%d", currentPort)
 	currentPort++
 	result.PubSpec = fmt.Sprintf("tcp://127.0.0.1:%d", currentPort)
@@ -58,15 +58,15 @@ func GetHandlerSpec(name string) (*HandlerSpec, error) {
 //http://groups.google.com/group/golang-nuts/msg/5ebbdd72e2d40c09
 func Checksum(s string) string {
 	b := make([]byte, 16)
-	
+
 	hasher.Reset()
 	hasher.Write([]byte(s))
-	
-	for i, v:=range hasher.Sum() {
-		b[i]=v
-		b[i+8]=v
+
+	for i, v := range hasher.Sum(nil) {
+		b[i] = v
+		b[i+8] = v
 	}
-	
+
 	b[6] = (b[6] & 0x0F) | 0x40
 	b[8] = (b[8] &^ 0x40) | 0x80
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[:4], b[4:6], b[6:8], b[8:10], b[10:])

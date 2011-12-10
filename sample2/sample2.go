@@ -41,8 +41,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error initializing mongrel connection (Bind):%s\n", err)
 		return
 	}
-	// don't forget to clean up various resources when done
-	defer handler.Shutdown()
 
 	//loop forever taking anything mongrel2 sends to us and putting on a channel
 	go handler.ReadLoop(in)

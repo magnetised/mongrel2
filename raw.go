@@ -15,7 +15,6 @@ import (
 //Developers should not need this type.
 type RawHandler interface {
 	Bind(name string, ctx gozmq.Context) error
-	Shutdown() error
 }
 
 //Handler is a low-level an implementation of the interface RawHandler
@@ -97,28 +96,6 @@ func (self *RawHandlerDefault) Bind(name string, ctx gozmq.Context) error {
 	return nil
 }
 
-//Shutdown cleans up the resources associated with this mongrel2 connection.
-//Normally this function should be part of a defer call that is immediately after
-//allocating the resources, like this:
-//	mongrel:=new(RawHandlerDefault)
-//  defer mongrel.Shutdown()
-// Note that this does not close the context because the context is supplied from
-// outside the handler.
-func (self *RawHandlerDefault) Shutdown() error {
-
-	//dump the ZMQ level sockets
-	if self.InSocket != nil {
-		if err := self.InSocket.Close(); err != nil {
-			return err
-		}
-		if err := self.OutSocket.Close(); err != nil {
-			return err
-		}
-		self.InSocket = nil
-		self.OutSocket = nil
-	}
-	return nil
-}
 
 //MustCreateContext is a function that creates a ZMQ context or panics trying to do so.
 //Useful if you can't do any work without a ZMQ context.

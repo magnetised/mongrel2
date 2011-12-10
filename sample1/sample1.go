@@ -53,9 +53,6 @@ func main() {
 		return
 	}
 
-	// don't forget to clean up various socket resources when done
-	defer socketInterface.Shutdown()
-
 	fmt.Printf("waiting on a message from the mongrel2 server...\n")
 
 	//now we want to work with the http layer... this blocks waiting for a read

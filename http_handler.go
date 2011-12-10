@@ -66,7 +66,9 @@ func (self *HttpHandlerDefault) ReadLoop(in chan *HttpRequest) {
 		if err != nil {
 			//e := err.(gozmq.ZmqErrno)
 			if err == gozmq.ETERM {
-				//fmt.Printf("read loop ignoring ETERM...\n")
+				//fmt.Printf("HTTP socket ignoring ETERM in read, signaling higher level and assuming shutdown...%p\n",self)
+				self.InSocket.Close()
+				close(in)
 				return
 			}
 			panic(err)
@@ -82,6 +84,8 @@ func (self *HttpHandlerDefault) WriteLoop(out chan *HttpResponse) {
 	for {
 		m := <-out
 		if m == nil {
+			//fmt.Printf("HTTP socket read nil in write loop, assuming shutdown...%p\n",self)
+			self.OutSocket.Close()
 			return //end of goroutine b/c of shutdown
 		}
 
@@ -89,7 +93,8 @@ func (self *HttpHandlerDefault) WriteLoop(out chan *HttpResponse) {
 		if err != nil {
 			//e := err.(gozmq.ZmqErrno)
 			if err == gozmq.ETERM {
-				//fmt.Printf("write loop ignoring ETERM...\n")
+				//fmt.Printf("HTTP socket ignoring ETERM in write loop, assuming shutdown of %p...\n",self)
+				self.OutSocket.Close()
 				return
 			}
 			panic(err)
@@ -175,3 +180,4 @@ func (self *HttpHandlerDefault) WriteMessage(response *HttpResponse) error {
 	err := self.OutSocket.Send(buffer.Bytes(), 0)
 	return err
 }
+

@@ -87,6 +87,7 @@ func (self *JsonHandlerDefault) ReadLoop(in chan *JsonRequest) {
 		r, err := self.ReadJson()
 		if err != nil {
 			if err == gozmq.ETERM {
+				fmt.Printf("JSON socket ignoring ETERM on read, assuming shutdown...\n")
 				return
 			}
 			panic(err)
@@ -108,6 +109,7 @@ func (self *JsonHandlerDefault) WriteLoop(out chan *JsonResponse) {
 		err := self.WriteJson(m)
 		if err != nil {
 			if err == gozmq.ETERM {
+				fmt.Printf("JSON socket ignoring ETERM on write, assuming shutdown...\n")
 				return
 			}
 			panic(err)
