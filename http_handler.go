@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	//"os"
 )
 
 //HttpHandler is an interface that allows communication with the mongrel2 for serving
@@ -125,6 +126,7 @@ func (self *HttpHandlerDefault) ReadMessage() (*HttpRequest, error) {
 	result.ServerId = serverId
 	result.ClientId = clientId
 	result.Header = jsonMap
+
 
 	if bodySize > 0 {
 		result.Body = req[bodyStart : bodyStart+bodySize]
