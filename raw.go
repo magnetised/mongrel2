@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/alecthomas/gozmq"
+	"github.com/seven5/gozmq"
 	"os"
 	"strconv"
 )

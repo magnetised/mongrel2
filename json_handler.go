@@ -3,7 +3,7 @@ package mongrel2
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/alecthomas/gozmq"
+	"github.com/seven5/gozmq"
 	"strconv"
 	"strings"
 )
