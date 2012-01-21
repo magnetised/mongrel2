@@ -44,8 +44,8 @@ type HttpRequest struct {
 type HttpResponse struct {
 	ServerId      string
 	ClientId      []int
-	Body          io.Reader
-	ContentLength int
+	Body          io.ReadCloser
+	ContentLength int64
 	StatusCode    int
 	StatusMsg     string
 	Header        map[string]string

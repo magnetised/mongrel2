@@ -19,6 +19,13 @@ import (
 //							recv_ident='') 
 // Also, somewhere in your config you need to bind that handler to a path.
 
+//stringCloser is to make strings.Reader work as a closer
+type stringCloser struct {
+	*strings.Reader
+}
+func (self *stringCloser) Close() error{
+	return nil
+}
 
 func main() {
 
@@ -64,8 +71,8 @@ func main() {
 
 		//make up a simple body for the user to see
 		b:= fmt.Sprintf("<pre>howdy %s, with client %d!</pre>", req.ServerId, req.ClientId)
-		response.Body=strings.NewReader(b)
-		response.ContentLength=len(b)
+		response.Body=&stringCloser{strings.NewReader(b)}
+		response.ContentLength=int64(len(b))
 		//send it via the channel
 		out <- response
 	}
