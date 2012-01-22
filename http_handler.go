@@ -12,7 +12,11 @@ import (
 
 //HttpHandler is an interface that allows communication with the mongrel2 for serving
 //HTTP requests in the particular format that mongrel2 uses.  This format is represented
-//by the HttpRequest and HttpResponse types in this package.
+//by the HttpRequest and HttpResponse types in this package.  This level does not mess
+//with the channels supplied to it at the ReadLoop() and WriteLoop() methods; this 
+//object deals ONLY with sockets.  Anyone using ReadLoop() or WriteLoop() should close
+//the channels themselves AND close the ZMQ context so that any goroutines blocked
+//on a read of a socket will get ETERM and die.
 type HttpHandler interface {
 	ReadMessage() (*HttpRequest, error)
 	WriteMessage(*HttpResponse) error
@@ -53,7 +57,7 @@ type HttpResponse struct {
 
 //HttpHandlerDefault is a basic implementation of the HttpHandler that knows about channels.
 //You can use the ReadLoop() and WriteLoop() to launch goroutines that interact correctly
-//with the channels.
+//with the channels, although it never closes them.
 type HttpHandlerDefault struct {
 	*RawHandlerDefault
 }
@@ -69,12 +73,20 @@ func (self *HttpHandlerDefault) ReadLoop(in chan *HttpRequest) {
 			if err == gozmq.ETERM {
 				//fmt.Printf("HTTP socket ignoring ETERM in read, signaling higher level and assuming shutdown...%p\n",self)
 				self.InSocket.Close()
-				close(in)
+				//concurrency claim: we DONT want to close the in channel because the ETERM will happen only
+				//at the end of shutdown processing and thus the in channel is already closed... 
 				return
 			}
 			panic(err)
 		}
-		in <- r
+		select {
+		case x, ok := <- in:
+				//this case happens if somebody manages to close the channel right as you are reading something 
+				//from the server. Rare, but possible.
+				fmt.Printf("discard received message because channel is closed: %v %v %p\n",x,ok,self)
+				return//closin time
+		case in <- r:
+		}
 	}
 }
 // WriteLoop is a loop that sends mongrel two message until it gets an error
@@ -83,6 +95,7 @@ func (self *HttpHandlerDefault) ReadLoop(in chan *HttpRequest) {
 //to mongrel2.
 func (self *HttpHandlerDefault) WriteLoop(out chan *HttpResponse) {
 	for {
+		//coming from higher layer to us 
 		m := <-out
 		if m == nil {
 			//fmt.Printf("HTTP socket read nil in write loop, assuming shutdown...%p\n",self)
