@@ -3,7 +3,7 @@ package mongrel2
 import (
 	"bytes"
 	"fmt"
-	"github.com/seven5/gozmq"
+	"github.com/alecthomas/gozmq"
 	"io"
 	"strconv"
 	"strings"
