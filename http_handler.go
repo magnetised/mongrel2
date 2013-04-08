@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/alecthomas/gozmq"
 	"io"
-	"strconv"
-	"strings"
 	//"os"
 )
 
@@ -154,11 +152,6 @@ func (self *HttpHandlerDefault) ReadMessage() (*HttpRequest, error) {
 //by many Mongrel2 server instances, but only the server addressed in the serverId
 //will transmit process the response --sending the result on to the client or clients.
 func (self *HttpHandlerDefault) WriteMessage(response *HttpResponse) error {
-	c := make([]string, len(response.ClientId), len(response.ClientId))
-	for i, x := range response.ClientId {
-		c[i] = strconv.Itoa(x)
-	}
-	clientList := strings.Join(c, " ")
 
 	//create the properly mangled body in HTTP format
 	buffer := new(bytes.Buffer)
@@ -186,13 +179,9 @@ func (self *HttpHandlerDefault) WriteMessage(response *HttpResponse) error {
 			return e
 		}
 	}
-	//now we have the true size the body and can put it all together
-	msg := fmt.Sprintf("%s %d:%s, %s", response.ServerId, len(clientList), clientList, buffer.String())
 
-	buffer = new(bytes.Buffer)
-	buffer.WriteString(msg)
+	_, err := self.Write(response.ServerId, response.ClientId, buffer.Bytes())
 
-	err := self.OutSocket.Send(buffer.Bytes(), 0)
 	return err
 }
 

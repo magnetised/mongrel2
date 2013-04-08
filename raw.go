@@ -8,6 +8,8 @@ import (
 	"github.com/alecthomas/gozmq"
 	"os"
 	"strconv"
+	"strings"
+	"bytes"
 )
 
 //RawHandler is the basic type for an object that communicate with mongrel2.  This interface
@@ -162,6 +164,27 @@ func DecodePayloadStart(req []byte) (serverId string, clientId int, path string,
 		//bodySize -= 1
 	}
 	return
+}
+
+func (self *RawHandlerDefault) Write(serverId string, clientId []int, data []byte) (int, error) {
+	c := make([]string, len(clientId))
+	for i, id := range clientId {
+		c[i] = strconv.Itoa(id)
+	}
+	clientList := strings.Join(c, " ")
+
+	header := []byte(fmt.Sprintf("%s %d:%s, ", serverId, len(clientList), clientList))
+	msg := bytes.NewBuffer(make([]byte, 0, len(header) + len(data)))
+	msg.Write(header)
+	msg.Write(data)
+
+	fmt.Printf("Sending\n%s\n", msg.Bytes())
+
+	if err := self.OutSocket.Send(msg.Bytes(), 0); err != nil {
+		panic(err)
+		return 0, err
+	}
+	return msg.Len(), nil
 }
 
 func readSome(terminationChar byte, req []byte, start int) int {
