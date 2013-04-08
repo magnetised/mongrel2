@@ -51,6 +51,7 @@ type HttpResponse struct {
 	StatusCode    int
 	StatusMsg     string
 	Header        map[string]string
+	Stream        bool
 }
 
 //HttpHandlerDefault is a basic implementation of the HttpHandler that knows about channels.
@@ -161,7 +162,7 @@ func (self *HttpHandlerDefault) WriteMessage(response *HttpResponse) error {
 		buffer.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\n", response.StatusCode, response.StatusMsg))
 	}
 
-	if response.ContentLength==0 && response.Body!=nil {
+	if !response.Stream && response.ContentLength==0 && response.Body!=nil {
 		panic("content length set to zero but body is not nil!")
 	}
 	buffer.WriteString(fmt.Sprintf("Content-Length: %d\r\n", response.ContentLength))
