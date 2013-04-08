@@ -11,7 +11,7 @@ import (
 //HttpHandler is an interface that allows communication with the mongrel2 for serving
 //HTTP requests in the particular format that mongrel2 uses.  This format is represented
 //by the HttpRequest and HttpResponse types in this package.  This level does not mess
-//with the channels supplied to it at the ReadLoop() and WriteLoop() methods; this 
+//with the channels supplied to it at the ReadLoop() and WriteLoop() methods; this
 //object deals ONLY with sockets.  Anyone using ReadLoop() or WriteLoop() should close
 //the channels themselves AND close the ZMQ context so that any goroutines blocked
 //on a read of a socket will get ETERM and die.
@@ -62,7 +62,7 @@ type HttpHandlerDefault struct {
 }
 
 // ReadLoop is a loop that reads mongrel2 message until it gets an error.  This useful if
-// you want to launch a goroutine that reads forever from mongrel2 and makes the read 
+// you want to launch a goroutine that reads forever from mongrel2 and makes the read
 // messages available on the supplied channel.
 func (self *HttpHandlerDefault) ReadLoop(in chan *HttpRequest) {
 	for {
@@ -73,28 +73,29 @@ func (self *HttpHandlerDefault) ReadLoop(in chan *HttpRequest) {
 				//fmt.Printf("HTTP socket ignoring ETERM in read, signaling higher level and assuming shutdown...%p\n",self)
 				self.InSocket.Close()
 				//concurrency claim: we DONT want to close the in channel because the ETERM will happen only
-				//at the end of shutdown processing and thus the in channel is already closed... 
+				//at the end of shutdown processing and thus the in channel is already closed...
 				return
 			}
 			panic(err)
 		}
 		select {
-		case x, ok := <- in:
-				//this case happens if somebody manages to close the channel right as you are reading something 
-				//from the server. Rare, but possible.
-				fmt.Printf("discard received message because channel is closed: %v %v %p\n",x,ok,self)
-				return//closin time
+		case x, ok := <-in:
+			//this case happens if somebody manages to close the channel right as you are reading something
+			//from the server. Rare, but possible.
+			fmt.Printf("discard received message because channel is closed: %v %v %p\n", x, ok, self)
+			return //closin time
 		case in <- r:
 		}
 	}
 }
+
 // WriteLoop is a loop that sends mongrel two message until it gets an error
 // or a message to close.  This is useful when you want to launch a goroutine
 //that runs forever just taking messages from the out channel supplied and pushing them
 //to mongrel2.
 func (self *HttpHandlerDefault) WriteLoop(out chan *HttpResponse) {
 	for {
-		//coming from higher layer to us 
+		//coming from higher layer to us
 		m := <-out
 		if m == nil {
 			//fmt.Printf("HTTP socket read nil in write loop, assuming shutdown...%p\n",self)
@@ -139,7 +140,6 @@ func (self *HttpHandlerDefault) ReadMessage() (*HttpRequest, error) {
 	result.ClientId = clientId
 	result.Header = jsonMap
 
-
 	if bodySize > 0 {
 		result.Body = req[bodyStart : bodyStart+bodySize]
 	}
@@ -147,7 +147,7 @@ func (self *HttpHandlerDefault) ReadMessage() (*HttpRequest, error) {
 	return result, nil
 }
 
-//WriteMessage takes an HttpResponse structs and enques it for transmission.  This call 
+//WriteMessage takes an HttpResponse structs and enques it for transmission.  This call
 //does _not_ block.  The Response struct must be targeted for a specific server
 //(ServerId) and one or more clients (ClientID).  The HttpResponse struct may be received
 //by many Mongrel2 server instances, but only the server addressed in the serverId
@@ -162,7 +162,7 @@ func (self *HttpHandlerDefault) WriteMessage(response *HttpResponse) error {
 		buffer.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\n", response.StatusCode, response.StatusMsg))
 	}
 
-	if !response.Stream && response.ContentLength==0 && response.Body!=nil {
+	if !response.Stream && response.ContentLength == 0 && response.Body != nil {
 		panic("content length set to zero but body is not nil!")
 	}
 	buffer.WriteString(fmt.Sprintf("Content-Length: %d\r\n", response.ContentLength))
@@ -185,4 +185,3 @@ func (self *HttpHandlerDefault) WriteMessage(response *HttpResponse) error {
 
 	return err
 }
-

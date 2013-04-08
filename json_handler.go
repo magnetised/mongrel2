@@ -95,6 +95,7 @@ func (self *JsonHandlerDefault) ReadLoop(in chan *JsonRequest) {
 		in <- r
 	}
 }
+
 // WriteLoop is a loop that sends mongrel two message until it gets an error
 // or a message to close.  This is useful when you want to launch a goroutine
 //that runs forever just taking messages from the out channel supplied and pushing them

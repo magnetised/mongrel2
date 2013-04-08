@@ -2,6 +2,7 @@
 package mongrel2
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"bytes"
 )
 
 //RawHandler is the basic type for an object that communicate with mongrel2.  This interface
@@ -97,7 +97,6 @@ func (self *RawHandlerDefault) Bind(name string, ctx *gozmq.Context) error {
 	return nil
 }
 
-
 //MustCreateContext is a function that creates a ZMQ context or panics trying to do so.
 //Useful if you can't do any work without a ZMQ context.
 func MustCreateContext() *gozmq.Context {
@@ -174,7 +173,7 @@ func (self *RawHandlerDefault) Write(serverId string, clientId []int, data []byt
 	clientList := strings.Join(c, " ")
 
 	header := []byte(fmt.Sprintf("%s %d:%s, ", serverId, len(clientList), clientList))
-	msg := bytes.NewBuffer(make([]byte, 0, len(header) + len(data)))
+	msg := bytes.NewBuffer(make([]byte, 0, len(header)+len(data)))
 	msg.Write(header)
 	msg.Write(data)
 
