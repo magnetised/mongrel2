@@ -14,21 +14,20 @@ import (
 //just knows about sockets, nothing about what to do with communication on those sockets.
 //Developers should not need this type.
 type RawHandler interface {
-	Bind(name string, ctx gozmq.Context) error
+	Bind(name string, ctx *gozmq.Context) error
 }
 
 //Handler is a low-level an implementation of the interface RawHandler
 //for connecting, via 0MQ, to a mongrel2 server. Developers should not need
 //this type, it is part of the implementation of this package.
 type RawHandlerDefault struct {
-	InSocket, OutSocket         gozmq.Socket
+	InSocket, OutSocket         *gozmq.Socket
 	PullSpec, PubSpec, Identity string
 }
 
 //initZMQ creates the necessary ZMQ machinery and sets the fields of the
 //Mongrel2 struct.  This is normally called via the Init() method.
-func (self *RawHandlerDefault) InitZMQ(ctx gozmq.Context) error {
-
+func (self *RawHandlerDefault) InitZMQ(ctx *gozmq.Context) error {
 	s, err := ctx.NewSocket(gozmq.PULL)
 	if err != nil {
 		return err
@@ -73,7 +72,7 @@ func (self *RawHandlerDefault) InitZMQ(ctx gozmq.Context) error {
 //to mongrel2.  It uses the supplied context to allocate the resources and allocates
 //an address based on the name and uses that for the send and receive sockets.  If
 //called multiple times, it has no effect.
-func (self *RawHandlerDefault) Bind(name string, ctx gozmq.Context) error {
+func (self *RawHandlerDefault) Bind(name string, ctx *gozmq.Context) error {
 	//this only needs to be done once for a particular name, even if you call
 	//Shutdown() and Bind() again.
 	if self.Identity == "" {
@@ -99,7 +98,7 @@ func (self *RawHandlerDefault) Bind(name string, ctx gozmq.Context) error {
 
 //MustCreateContext is a function that creates a ZMQ context or panics trying to do so.
 //Useful if you can't do any work without a ZMQ context.
-func MustCreateContext() gozmq.Context {
+func MustCreateContext() *gozmq.Context {
 	// do a version check
 	x, y, z := gozmq.Version()
 	if x != 2 && y != 1 {
